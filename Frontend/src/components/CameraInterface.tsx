@@ -82,9 +82,34 @@ export default function CameraInterface({ onBack }: CameraInterfaceProps) {
   }, [capture])
 
   function speak(text: string) {
+    if (!window.speechSynthesis) return
+
     const utterance = new SpeechSynthesisUtterance(text)
+    const voices = window.speechSynthesis.getVoices()
+    
+    // Lista de voces de alta calidad en español
+    const preferredVoices = ['Jorge', 'Monica', 'Diego', 'Siri', 'Paulina', 'Juan', 'Google español']
+    let selectedVoice = null
+
+    // 1. Intentar encontrar una de nuestras preferidas
+    for (const name of preferredVoices) {
+      selectedVoice = voices.find(v => v.name.includes(name) && v.lang.startsWith('es'))
+      if (selectedVoice) break
+    }
+
+    // 2. Fallback: cualquier voz en español (priorizando es-AR)
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang === 'es-AR') || voices.find(v => v.lang.startsWith('es'))
+    }
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice
+    }
+
     utterance.lang = 'es-AR'
-    utterance.rate = 1.2
+    utterance.rate = 1.1
+    utterance.pitch = 1.0
+
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utterance)
   }

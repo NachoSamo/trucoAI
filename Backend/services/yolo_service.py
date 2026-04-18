@@ -91,13 +91,47 @@ class YOLOService:
         # ORDENAR DE IZQUIERDA A DERECHA
         detections.sort(key=lambda d: d["x"])
         
-        # Extraer los nombres ya ordenados
-        detected_cards = [d["name"] for d in detections]
+        # Diccionario de nombres del Truco
+        TRUCO_NAMES = {
+            "1-ESPADA": "el macho",
+            "1-BASTO": "la hembra",
+            "7-ESPADA": "el siete de espada",
+            "7-ORO": "el siete de oro",
+            "3-ESPADA": "el tres de espada",
+            "3-BASTO": "el tres de basto",
+            "3-COPA": "el tres de copa",
+            "3-ORO": "el tres de oro",
+            "2-ESPADA": "el dos de espada",
+            "2-BASTO": "el dos de basto",
+            "2-COPA": "el dos de copa",
+            "2-ORO": "el dos de oro",
+            "1-COPA": "el ancho falso de copa",
+            "1-ORO": "el ancho falso de oro",
+            "12-ESPADA": "el doce de espada",
+            "4-BASTO": "el cuatro de basto",
+            "4-COPA": "el cuatro de copa",
+            "4-ORO": "el cuatro de oro",
+            "5-COPA": "el cinco de copa",
+            "7_COPAS": "el siete de copa",
+        }
+
+        # Extraer los nombres ya ordenados y traducirlos
+        detected_cards = []
+        friendly_names = []
+        for d in detections:
+            name = d["name"]
+            detected_cards.append(name)
+            # Si el nombre está en nuestro diccionario, usamos el nombre del truco
+            friendly_names.append(TRUCO_NAMES.get(name, name.replace("-", " de ")))
         
         print(f"DEBUG: Total de cajas detectadas: {len(detected_cards)}")
         
         if not detected_cards:
             return [], "No se detectaron cartas claramente."
             
-        message = f"Detecté: {', '.join(detected_cards)}"
+        if len(friendly_names) == 1:
+            message = f"Tienes {friendly_names[0]}"
+        else:
+            message = f"Tienes {', '.join(friendly_names[:-1])} y {friendly_names[-1]}"
+            
         return detected_cards, message
