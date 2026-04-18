@@ -27,12 +27,22 @@ class YOLOService:
     def process_base64(self, base64_str: str):
         """Convierte una cadena base64 en una imagen de OpenCV."""
         try:
+            # Limpiar posibles espacios o cabeceras que se hayan colado
+            base64_str = base64_str.strip()
             img_data = base64.b64decode(base64_str)
+            
+            print(f"DEBUG: Recibidos {len(img_data)} bytes de imagen.")
+            
             nparr = np.frombuffer(img_data, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            if img is None:
+                print("❌ ERROR: cv2.imdecode devolvió None. ¿Es un JPEG válido?")
+                return None
+                
             return img
         except Exception as e:
-            print(f"Error decodificando imagen base64: {e}")
+            print(f"❌ ERROR decodificando imagen base64: {e}")
             return None
 
     def detect_cards(self, base64_image: str):
@@ -54,7 +64,7 @@ class YOLOService:
         # --------------------------------------------------
 
         # Inferencia con umbral muy bajo (0.1) para forzar cualquier detección
-        results = self.model(img, conf=0.1) 
+        results = self.model(img, conf=0.3, iou=0.4, agnostic_nms=True) 
         
         # Guardar imagen con resultados dibujados (aunque no haya nada)
         res_plotted = results[0].plot()
