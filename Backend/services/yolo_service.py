@@ -63,28 +63,38 @@ class YOLOService:
         cv2.imwrite(str(debug_path), img)
         # --------------------------------------------------
 
-        # Inferencia con umbral muy bajo (0.1) para forzar cualquier detección
-        results = self.model(img, conf=0.3, iou=0.4, agnostic_nms=True) 
+        # Inferencia
+        results = self.model(img, conf=0.5, iou=0.5, agnostic_nms=True) 
         
-        # Guardar imagen con resultados dibujados (aunque no haya nada)
+        # Guardar imagen con resultados dibujados
         res_plotted = results[0].plot()
         cv2.imwrite("debug_images/result.jpg", res_plotted)
         print(f"DEBUG: Resultado visual guardado en debug_images/result.jpg")
 
-        detected_cards = []
-        box_count = 0
+        detections = []
         for result in results:
-            box_count += len(result.boxes)
             for box in result.boxes:
                 class_id = int(box.cls[0])
                 conf = float(box.conf[0])
                 class_name = self.model.names[class_id]
-                detected_cards.append(class_name)
-                print(f"DEBUG: >> Detectado '{class_name}' con confianza {conf:.2f}")
+                
+                # Obtener la coordenada X (centro de la caja)
+                # box.xywh devuelve [x_center, y_center, width, height]
+                x_center = float(box.xywh[0][0])
+                
+                detections.append({
+                    "name": class_name,
+                    "x": x_center
+                })
+                print(f"DEBUG: >> Detectado '{class_name}' en x={x_center:.1f} (conf {conf:.2f})")
         
-        print(f"DEBUG: Total de cajas detectadas: {box_count}")
+        # ORDENAR DE IZQUIERDA A DERECHA
+        detections.sort(key=lambda d: d["x"])
         
-        detected_cards = list(dict.fromkeys(detected_cards))
+        # Extraer los nombres ya ordenados
+        detected_cards = [d["name"] for d in detections]
+        
+        print(f"DEBUG: Total de cajas detectadas: {len(detected_cards)}")
         
         if not detected_cards:
             return [], "No se detectaron cartas claramente."
