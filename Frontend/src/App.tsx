@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import CameraPage from './pages/CameraPage'
+import SettingsPage from './pages/SettingsPage'
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const isAuthenticated = !!localStorage.getItem('complice_token')
@@ -28,6 +29,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CameraPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

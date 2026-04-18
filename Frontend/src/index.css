@@ -3,7 +3,19 @@
 @tailwind utilities;
 
 body {
-  background-color: #000;
-  color: #fff;
+  background-color: #0a0a0c;
+  color: #fff6f1;
+  font-family: 'Geologica', sans-serif;
+  font-variation-settings: 'CRSV' 0, 'slnt' 0, 'SHRP' 0;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Chrome/1Password Autofill fixes */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #fff6f1 inset !important;
+  -webkit-text-fill-color: #0a0a0c !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
