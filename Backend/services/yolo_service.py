@@ -5,7 +5,7 @@ from ultralytics import YOLO
 from pathlib import Path
 
 class YOLOService:
-    def __init__(self, model_path="models/bestVIEJO.pt"): # CAMBIAR AHI SI SE USA EL NUEVO
+    def __init__(self, model_path="models/spanishDeck.pt"): # CAMBIAR AHI SI SE USA EL NUEVO
         self.model_path = model_path
         self.model = None
         self._load_model()

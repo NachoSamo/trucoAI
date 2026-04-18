@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, Monitor, Smartphone } from 'lucide-react'
+import { ArrowLeft, Camera, Check, Monitor, Smartphone } from 'lucide-react'
 import Button from '../components/ui/Button'
 import { useNotification } from '../hooks/useNotification'
 
@@ -38,6 +38,39 @@ export default function SettingsPage() {
   const [deviceType, setDeviceType] = useState<DeviceType | null>(null)
   const [capturedKey, setCapturedKey] = useState<string | null>(null)
   const [savedKey, setSavedKey] = useState(() => localStorage.getItem('detection_key') ?? 'Space')
+
+  // Cámara
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([])
+  const [showCameraSelector, setShowCameraSelector] = useState(false)
+  const [loadingCameras, setLoadingCameras] = useState(false)
+  const [savedCameraId, setSavedCameraId] = useState(() => localStorage.getItem('camera_device_id') ?? '')
+
+  async function openCameraSelector() {
+    setLoadingCameras(true)
+    try {
+      // Pedir permiso brevemente para desbloquear los labels
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      stream.getTracks().forEach(t => t.stop())
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      setCameras(devices.filter(d => d.kind === 'videoinput'))
+      setShowCameraSelector(true)
+    } catch {
+      notification.error('No se pudo acceder a las cámaras.')
+    } finally {
+      setLoadingCameras(false)
+    }
+  }
+
+  function selectCamera(deviceId: string) {
+    localStorage.setItem('camera_device_id', deviceId)
+    setSavedCameraId(deviceId)
+    notification.success('Cámara guardada. Reiniciá la cámara para aplicar.')
+    setShowCameraSelector(false)
+  }
+
+  function cameraLabel(cam: MediaDeviceInfo, index: number): string {
+    return cam.label || `Cámara ${index + 1}`
+  }
 
   // Captura de tecla: solo activo cuando step === 'listening'
   useEffect(() => {
@@ -121,6 +154,82 @@ export default function SettingsPage() {
           Cambiar botón
         </Button>
       </section>
+
+      {/* Sección: Cámara */}
+      <section className="bg-brand-navy rounded-2xl p-6 border border-brand-blue/40 flex flex-col gap-4">
+        <div>
+          <h2 className="text-brand-cream text-lg font-bold uppercase tracking-widest">
+            Cámara
+          </h2>
+          <p className="text-brand-cream/40 text-sm font-light mt-1">
+            Seleccioná qué cámara usar para detectar las cartas.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between bg-brand-bg rounded-xl px-5 py-4 border border-brand-blue/20">
+          <span className="text-brand-cream/50 text-sm font-light uppercase tracking-widest">Actual</span>
+          <span className="text-brand-yellow font-bold text-base truncate max-w-[60%] text-right">
+            {savedCameraId
+              ? (cameras.find(c => c.deviceId === savedCameraId)?.label || 'Cámara guardada')
+              : 'Predeterminada'}
+          </span>
+        </div>
+
+        <Button variant="secondary" size="md" onClick={() => void openCameraSelector()} disabled={loadingCameras}>
+          {loadingCameras ? 'Cargando…' : 'Cambiar cámara'}
+        </Button>
+      </section>
+
+      {/* ── Overlay: selector de cámara ── */}
+      {showCameraSelector && (
+        <div className="fixed inset-0 bg-brand-bg/95 backdrop-blur-sm flex flex-col p-6 gap-6 z-50 overflow-y-auto">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowCameraSelector(false)}
+              aria-label="Cerrar"
+              className="text-brand-cream/60 hover:text-brand-yellow transition-colors p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow/50"
+            >
+              <ArrowLeft size={26} />
+            </button>
+            <h2 className="text-brand-yellow text-xl font-black uppercase tracking-widest">
+              Elegí una cámara
+            </h2>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {cameras.map((cam, i) => {
+              const active = savedCameraId === cam.deviceId
+              return (
+                <button
+                  key={cam.deviceId}
+                  onClick={() => selectCamera(cam.deviceId)}
+                  className={`flex items-center gap-4 rounded-2xl px-5 py-5 border-2 transition-all focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 text-left ${
+                    active
+                      ? 'bg-brand-yellow/10 border-brand-yellow'
+                      : 'bg-brand-bg border-brand-blue/30 hover:border-brand-blue'
+                  }`}
+                >
+                  <Camera size={28} className={active ? 'text-brand-yellow shrink-0' : 'text-brand-blue shrink-0'} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-bold text-base truncate ${active ? 'text-brand-yellow' : 'text-brand-cream'}`}>
+                      {cameraLabel(cam, i)}
+                    </p>
+                    <p className="text-brand-cream/30 text-xs font-light mt-0.5 truncate">
+                      {cam.deviceId.slice(0, 20)}…
+                    </p>
+                  </div>
+                  {active && <Check size={20} className="text-brand-yellow shrink-0" />}
+                </button>
+              )
+            })}
+          </div>
+
+          <p className="text-brand-cream/25 text-xs font-light text-center">
+            En iOS los nombres de cámara pueden aparecer como "Cámara 1", "Cámara 2", etc.
+            La cámara trasera suele ser la última de la lista.
+          </p>
+        </div>
+      )}
 
       {/* Sección: Accesibilidad placeholder */}
       <section className="bg-brand-navy rounded-2xl p-6 border border-brand-blue/40 flex flex-col gap-3">

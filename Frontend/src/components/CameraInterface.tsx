@@ -33,11 +33,17 @@ export default function CameraInterface({ onBack }: CameraInterfaceProps) {
   const navigate = useNavigate()
 
   useEffect(() => {
+    const storedDeviceId = localStorage.getItem('camera_device_id')
+    const constraints: MediaStreamConstraints = {
+      video: storedDeviceId
+        ? { deviceId: { exact: storedDeviceId } }
+        : { facingMode: 'environment' },
+    }
+
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: 'environment' } })
-      .then((stream) => {
-        if (videoRef.current) videoRef.current.srcObject = stream
-      })
+      .getUserMedia(constraints)
+      .catch(() => navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }))
+      .then((stream) => { if (videoRef.current) videoRef.current.srcObject = stream })
   }, [])
 
   const capture = useCallback(async () => {
