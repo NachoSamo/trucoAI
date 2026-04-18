@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { LogOut, Play, Settings } from 'lucide-react'
 import Button from '../components/ui/Button'
+import Logo from '../components/Logo'
 import { useAuth } from '../hooks/useAuth'
 
 export default function HomePage() {
@@ -10,9 +11,12 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-between p-6 font-geologica">
       <header className="w-full flex justify-between items-center">
-        <h1 className="text-brand-yellow text-3xl font-black tracking-widest uppercase">
-          Cómplice AI
-        </h1>
+        <div className="flex items-center gap-2">
+          <Logo size={28} />
+          <h1 className="text-brand-yellow text-3xl font-black tracking-widest uppercase">
+            Cómplice AI
+          </h1>
+        </div>
         <div className="flex gap-1">
           <button
             onClick={() => navigate('/settings')}
