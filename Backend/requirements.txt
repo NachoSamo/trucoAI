@@ -4,3 +4,6 @@ sqlmodel>=0.0.18
 psycopg2-binary>=2.9.9
 python-multipart>=0.0.9
 pydantic>=2.7.0
+ultralytics>=8.3.0
+opencv-python-headless
+pillow
