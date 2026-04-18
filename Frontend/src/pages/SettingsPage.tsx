@@ -1,32 +1,86 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Check, Monitor, Smartphone } from 'lucide-react'
 import Button from '../components/ui/Button'
 import { useNotification } from '../hooks/useNotification'
 
-interface KeyOption {
-  value: string
-  label: string
-  hint: string
-}
+type ConfigStep = 'idle' | 'select-device' | 'listening' | 'confirmed'
+type DeviceType = 'pc' | 'mobile'
 
-const KEY_OPTIONS: KeyOption[] = [
-  { value: 'Space',  label: 'Barra espaciadora', hint: 'PC / teclado' },
-  { value: 'Enter',  label: 'Enter',              hint: 'PC / teclado' },
-  { value: 'KeyF',   label: 'Tecla F',            hint: 'PC' },
-  { value: 'VolumeUp', label: 'Volumen +',        hint: 'Android' },
-]
+const VOLUME_KEYS = ['AudioVolumeUp', 'AudioVolumeDown', 'VolumeUp', 'VolumeDown']
+const MODIFIER_KEYS = ['Shift', 'Control', 'Alt', 'Meta']
+
+export function keyDisplayName(key: string): string {
+  const map: Record<string, string> = {
+    Space:           'Barra espaciadora',
+    Enter:           'Enter',
+    AudioVolumeUp:   'Volumen +',
+    AudioVolumeDown: 'Volumen -',
+    VolumeUp:        'Volumen +',
+    VolumeDown:      'Volumen -',
+    ArrowUp:         'Flecha ↑',
+    ArrowDown:       'Flecha ↓',
+    ArrowLeft:       'Flecha ←',
+    ArrowRight:      'Flecha →',
+  }
+  if (map[key]) return map[key]
+  if (key.startsWith('Key')) return `Tecla ${key.replace('Key', '')}`
+  if (key.startsWith('Digit')) return `Número ${key.replace('Digit', '')}`
+  if (key.startsWith('F') && !isNaN(Number(key.slice(1)))) return key
+  return key
+}
 
 export default function SettingsPage() {
   const navigate = useNavigate()
   const notification = useNotification()
-  const [detectionKey, setDetectionKey] = useState(
-    () => localStorage.getItem('detection_key') ?? 'Space',
-  )
 
-  function save() {
-    localStorage.setItem('detection_key', detectionKey)
-    notification.success('Configuración guardada')
+  const [step, setStep] = useState<ConfigStep>('idle')
+  const [deviceType, setDeviceType] = useState<DeviceType | null>(null)
+  const [capturedKey, setCapturedKey] = useState<string | null>(null)
+  const [savedKey, setSavedKey] = useState(() => localStorage.getItem('detection_key') ?? 'Space')
+
+  // Captura de tecla: solo activo cuando step === 'listening'
+  useEffect(() => {
+    if (step !== 'listening') return
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setStep('select-device'); return }
+
+      const isVolume = VOLUME_KEYS.includes(e.key)
+      const isModifier = MODIFIER_KEYS.includes(e.key)
+
+      if (isModifier) return
+      if (deviceType === 'mobile' && !isVolume) return
+
+      e.preventDefault()
+      // Para teclas de volumen, e.code puede estar vacío → usar e.key
+      setCapturedKey(e.code || e.key)
+      setStep('confirmed')
+    }
+
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [step, deviceType])
+
+  function confirm() {
+    if (!capturedKey) return
+    localStorage.setItem('detection_key', capturedKey)
+    setSavedKey(capturedKey)
+    notification.success(`Botón guardado: ${keyDisplayName(capturedKey)}`)
+    setStep('idle')
+    setCapturedKey(null)
+    setDeviceType(null)
+  }
+
+  function cancel() {
+    setStep('idle')
+    setCapturedKey(null)
+    setDeviceType(null)
+  }
+
+  function selectDevice(type: DeviceType) {
+    setDeviceType(type)
+    setStep('listening')
   }
 
   return (
@@ -46,46 +100,29 @@ export default function SettingsPage() {
         </h1>
       </div>
 
-      {/* Botón de detección */}
+      {/* Sección: Botón de detección */}
       <section className="bg-brand-navy rounded-2xl p-6 border border-brand-blue/40 flex flex-col gap-4">
         <div>
           <h2 className="text-brand-cream text-lg font-bold uppercase tracking-widest">
             Botón de detección
           </h2>
           <p className="text-brand-cream/40 text-sm font-light mt-1">
-            Elegí qué botón usás para capturar las cartas desde la cámara.
+            Configurá qué botón usás para capturar las cartas.
           </p>
         </div>
 
-        <div className="flex flex-col gap-3">
-          {KEY_OPTIONS.map((opt) => {
-            const active = detectionKey === opt.value
-            return (
-              <button
-                key={opt.value}
-                onClick={() => setDetectionKey(opt.value)}
-                className={`flex items-center justify-between rounded-xl px-5 py-4 border-2 transition-all focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 ${
-                  active
-                    ? 'bg-brand-yellow/10 border-brand-yellow text-brand-yellow'
-                    : 'bg-brand-bg border-brand-blue/30 text-brand-cream/60 hover:border-brand-blue'
-                }`}
-              >
-                <span className="text-lg font-bold">{opt.label}</span>
-                <span className={`text-sm font-light ${active ? 'text-brand-yellow/60' : 'opacity-40'}`}>
-                  {opt.hint}
-                </span>
-              </button>
-            )
-          })}
+        {/* Key actual */}
+        <div className="flex items-center justify-between bg-brand-bg rounded-xl px-5 py-4 border border-brand-blue/20">
+          <span className="text-brand-cream/50 text-sm font-light uppercase tracking-widest">Actual</span>
+          <span className="text-brand-yellow font-bold text-lg">{keyDisplayName(savedKey)}</span>
         </div>
 
-        <p className="text-brand-cream/25 text-xs font-light leading-relaxed">
-          * En iOS los botones de hardware no son accesibles desde el navegador web.
-          Usá teclado Bluetooth o un acceso directo de Siri Shortcuts.
-        </p>
+        <Button variant="secondary" size="md" onClick={() => setStep('select-device')}>
+          Cambiar botón
+        </Button>
       </section>
 
-      {/* Accesibilidad — placeholder */}
+      {/* Sección: Accesibilidad placeholder */}
       <section className="bg-brand-navy rounded-2xl p-6 border border-brand-blue/40 flex flex-col gap-3">
         <h2 className="text-brand-cream text-lg font-bold uppercase tracking-widest">
           Accesibilidad
@@ -95,9 +132,117 @@ export default function SettingsPage() {
         </p>
       </section>
 
-      <Button variant="primary" size="lg" onClick={save}>
-        Guardar configuración
-      </Button>
+      {/* ── Overlay 1: seleccionar dispositivo ── */}
+      {step === 'select-device' && (
+        <div className="fixed inset-0 bg-brand-bg/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 gap-8 z-50">
+          <div className="text-center">
+            <h2 className="text-brand-cream text-2xl font-bold uppercase tracking-widest">
+              ¿Desde dónde vas a jugar?
+            </h2>
+            <p className="text-brand-cream/40 text-sm font-light mt-2">
+              Esto nos ayuda a escuchar el botón correcto.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4 w-full max-w-sm">
+            <button
+              onClick={() => selectDevice('pc')}
+              className="flex items-center gap-5 bg-brand-navy border-2 border-brand-blue/40 hover:border-brand-yellow hover:bg-brand-yellow/10 rounded-2xl px-6 py-5 transition-all focus:outline-none focus:ring-2 focus:ring-brand-yellow/50"
+            >
+              <Monitor size={36} className="text-brand-blue shrink-0" />
+              <div className="text-left">
+                <p className="text-brand-cream font-bold text-lg">PC / Teclado</p>
+                <p className="text-brand-cream/40 text-sm font-light">Cualquier tecla del teclado</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => selectDevice('mobile')}
+              className="flex items-center gap-5 bg-brand-navy border-2 border-brand-blue/40 hover:border-brand-yellow hover:bg-brand-yellow/10 rounded-2xl px-6 py-5 transition-all focus:outline-none focus:ring-2 focus:ring-brand-yellow/50"
+            >
+              <Smartphone size={36} className="text-brand-blue shrink-0" />
+              <div className="text-left">
+                <p className="text-brand-cream font-bold text-lg">Celular</p>
+                <p className="text-brand-cream/40 text-sm font-light">Botón de volumen (Android)</p>
+              </div>
+            </button>
+          </div>
+
+          <button
+            onClick={cancel}
+            className="text-brand-cream/30 hover:text-brand-cream/60 text-sm font-light transition-colors"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
+      {/* ── Overlay 2: escuchando ── */}
+      {step === 'listening' && (
+        <div className="fixed inset-0 bg-brand-bg/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 gap-8 z-50">
+          {/* Anillo animado */}
+          <div className="relative flex items-center justify-center w-36 h-36">
+            <div className="absolute w-36 h-36 rounded-full border-4 border-brand-yellow/15 animate-ping" />
+            <div className="absolute w-28 h-28 rounded-full border-2 border-brand-yellow/30" />
+            <div className="w-20 h-20 rounded-full bg-brand-yellow/10 border-2 border-brand-yellow flex items-center justify-center">
+              {deviceType === 'pc'
+                ? <Monitor size={32} className="text-brand-yellow" />
+                : <Smartphone size={32} className="text-brand-yellow" />
+              }
+            </div>
+          </div>
+
+          <div className="text-center">
+            <h2 className="text-brand-yellow text-2xl font-black uppercase tracking-widest">
+              Escuchando…
+            </h2>
+            <p className="text-brand-cream/50 text-base font-light mt-3 max-w-xs">
+              {deviceType === 'pc'
+                ? 'Presioná la tecla que querés usar para detectar cartas.'
+                : 'Presioná el botón de volumen que querés usar.'
+              }
+            </p>
+            {deviceType === 'mobile' && (
+              <p className="text-brand-cream/25 text-xs font-light mt-3">
+                * iOS no permite capturar botones de hardware desde el navegador.
+              </p>
+            )}
+            <p className="text-brand-cream/20 text-xs font-light mt-2">
+              ESC para cancelar
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Overlay 3: confirmación ── */}
+      {step === 'confirmed' && capturedKey && (
+        <div className="fixed inset-0 bg-brand-bg/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 gap-8 z-50">
+          <div className="w-24 h-24 rounded-full bg-brand-yellow/10 border-4 border-brand-yellow flex items-center justify-center">
+            <Check size={40} className="text-brand-yellow" />
+          </div>
+
+          <div className="text-center">
+            <p className="text-brand-cream/60 text-sm font-light uppercase tracking-widest">
+              Botón detectado
+            </p>
+            <p className="text-brand-yellow text-4xl font-black mt-2">
+              {keyDisplayName(capturedKey)}
+            </p>
+            <p className="text-brand-cream/40 text-sm font-light mt-3">
+              Vas a usar este botón para detectar cartas.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <Button variant="primary" size="lg" onClick={confirm}>
+              Confirmar
+            </Button>
+            <Button variant="secondary" size="md" onClick={() => setStep('listening')}>
+              Volver a intentar
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -39,3 +39,13 @@ Crea un layout vertical dividido en paneles que demuestre la aplicación prácti
 3) Elimina los divs visuales de "tu mano" y de "Rendimiento sesion activa". Basicamente quiero que toda la page sea la camara y que se superpongan los componentes necesarios como toggles y textos sobre la camara. Simulando realidad aumentada.
 4) Elimina el boton de "Detectar cartas" y agrega que se realice con un boton del teclado (si es en pc) o con un boton de volumen (si es en celular) o si es en iphone con el boton de subir acciones ( si es que el modelo cuenta con él). Para ello debes agregar una page de configuracion para que el usuario pueda configurar el boton de deteccion de cartas y otras configuraciones que puedan ser relevantes para el usuario.
 5) Mejora los colores de los componentes, estan todos del mismo color actualmente y no se diferencian bien entre si. Usa la paleta de colores que te di para que se diferencien bien entre si.
+
+[fix2]
+Necesito que el flujo de configuracion sea:
+1) El usuario entra a la pagina de configuracion
+2) El usuario selecciona el boton de deteccion de cartas en pc o en movil
+3) El sistema abre un panel para identificar el boton que quiere usar para detectar cartas.
+4) El usuario presiona el boton que quiere usar para detectar cartas
+5) El sistema muestra el boton que quiere usar para detectar cartas y un mensaje de confirmacion.
+6) El usuario vuelve a la pagina principal saliendo de la configuracion
+7) El usuario puede detectar cartas con el boton de deteccion de cartas dependiendo si esta en movil o en pc

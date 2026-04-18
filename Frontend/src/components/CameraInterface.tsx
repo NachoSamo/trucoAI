@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { detectCards } from '../api'
+import { keyDisplayName } from '../pages/SettingsPage'
 
 type DetectionState = 'idle' | 'detecting' | 'success' | 'error'
 
@@ -65,7 +66,7 @@ export default function CameraInterface({ onBack }: CameraInterfaceProps) {
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const key = localStorage.getItem('detection_key') ?? 'Space'
-      if (e.code === key || e.key === 'AudioVolumeUp' || e.key === 'VolumeUp') {
+      if (e.code === key || e.key === key) {
         e.preventDefault()
         void capture()
       }
@@ -83,10 +84,7 @@ export default function CameraInterface({ onBack }: CameraInterfaceProps) {
   }
 
   const { pill, dot } = STATE_STYLE[detectionState]
-  const keyLabel =
-    detectionKey === 'Space' ? 'ESPACIO' :
-    detectionKey === 'Enter' ? 'ENTER' :
-    detectionKey.replace('Key', '')
+  const keyLabel = keyDisplayName(detectionKey).toUpperCase()
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-brand-bg font-geologica">
