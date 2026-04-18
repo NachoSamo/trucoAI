@@ -11,17 +11,17 @@ interface CameraInterfaceProps {
 }
 
 const STATE_LABEL: Record<DetectionState, string> = {
-  idle:      'ESPERANDO CARTAS',
+  idle: 'ESPERANDO CARTAS',
   detecting: 'DETECTANDO…',
-  success:   'CARTAS DETECTADAS',
-  error:     'FALLO DE DETECCIÓN',
+  success: 'CARTAS DETECTADAS',
+  error: 'FALLO DE DETECCIÓN',
 }
 
 const STATE_STYLE: Record<DetectionState, { pill: string; dot: string }> = {
-  idle:      { pill: 'border-brand-cream/20 text-brand-cream/60', dot: 'bg-brand-cream/40' },
-  detecting: { pill: 'border-brand-yellow text-brand-yellow',     dot: 'bg-brand-yellow animate-pulse' },
-  success:   { pill: 'border-brand-yellow text-brand-yellow',     dot: 'bg-brand-yellow' },
-  error:     { pill: 'border-brand-red text-brand-red',           dot: 'bg-brand-red' },
+  idle: { pill: 'border-brand-cream/20 text-brand-cream/60', dot: 'bg-brand-cream/40' },
+  detecting: { pill: 'border-brand-yellow text-brand-yellow', dot: 'bg-brand-yellow animate-pulse' },
+  success: { pill: 'border-brand-yellow text-brand-yellow', dot: 'bg-brand-yellow' },
+  error: { pill: 'border-brand-red text-brand-red', dot: 'bg-brand-red' },
 }
 
 // Audio silencioso mínimo — necesario para activar MediaSession en iOS
@@ -29,15 +29,15 @@ const SILENT_AUDIO_SRC =
   'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='
 
 export default function CameraInterface({ onBack }: CameraInterfaceProps) {
-  const videoRef    = useRef<HTMLVideoElement>(null)
-  const canvasRef   = useRef<HTMLCanvasElement>(null)
-  const audioRef    = useRef<HTMLAudioElement | null>(null)
-  const lastTapRef  = useRef(0)
-  const msReadyRef  = useRef(false)     // MediaSession ya activado
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const lastTapRef = useRef(0)
+  const msReadyRef = useRef(false)     // MediaSession ya activado
 
   const [detectionState, setDetectionState] = useState<DetectionState>('idle')
-  const [cards, setCards]                   = useState<string[]>([])
-  const [detectionKey]                      = useState(() => localStorage.getItem('detection_key') ?? 'Space')
+  const [cards, setCards] = useState<string[]>([])
+  const [detectionKey] = useState(() => localStorage.getItem('detection_key') ?? 'Space')
   const navigate = useNavigate()
 
   // ── Cámara ──────────────────────────────────────────────────────────
@@ -60,9 +60,9 @@ export default function CameraInterface({ onBack }: CameraInterfaceProps) {
     setDetectionState('detecting')
     speak('Iniciando detección')
 
-    const video  = videoRef.current
+    const video = videoRef.current
     const canvas = canvasRef.current
-    canvas.width  = video.videoWidth
+    canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     canvas.getContext('2d')!.drawImage(video, 0, 0)
     const base64 = canvas.toDataURL('image/jpeg').split(',')[1]
@@ -103,16 +103,16 @@ export default function CameraInterface({ onBack }: CameraInterfaceProps) {
     msReadyRef.current = true
 
     const audio = new Audio(SILENT_AUDIO_SRC)
-    audio.loop   = true
+    audio.loop = true
     audio.volume = 0.001   // casi silencioso pero no muteado (iOS lo requiere)
     audioRef.current = audio
-    audio.play().catch(() => {})
+    audio.play().catch(() => { })
 
     if ('mediaSession' in navigator) {
       const handler = () => void captureRef.current()
-      navigator.mediaSession.setActionHandler('play',          handler)
-      navigator.mediaSession.setActionHandler('pause',         handler)
-      navigator.mediaSession.setActionHandler('nexttrack',     handler)
+      navigator.mediaSession.setActionHandler('play', handler)
+      navigator.mediaSession.setActionHandler('pause', handler)
+      navigator.mediaSession.setActionHandler('nexttrack', handler)
       navigator.mediaSession.setActionHandler('previoustrack', handler)
     }
   }
@@ -121,7 +121,7 @@ export default function CameraInterface({ onBack }: CameraInterfaceProps) {
   useEffect(() => () => {
     audioRef.current?.pause()
     if ('mediaSession' in navigator) {
-      ;(['play', 'pause', 'nexttrack', 'previoustrack'] as MediaSessionAction[])
+      ; (['play', 'pause', 'nexttrack', 'previoustrack'] as MediaSessionAction[])
         .forEach(a => navigator.mediaSession.setActionHandler(a, null))
     }
   }, [])
@@ -140,9 +140,36 @@ export default function CameraInterface({ onBack }: CameraInterfaceProps) {
 
   // ── TTS ─────────────────────────────────────────────────────────────
   function speak(text: string) {
+    if (!window.speechSynthesis) return
+
     const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang  = 'es-AR'
-    utterance.rate  = 1.2
+    utterance.lang = 'es-AR'
+    utterance.rate = 1.2
+    const voices = window.speechSynthesis.getVoices()
+
+    // Lista de voces de alta calidad en español
+    const preferredVoices = ['Jorge', 'Monica', 'Diego', 'Siri', 'Paulina', 'Juan', 'Google español']
+    let selectedVoice = null
+
+    // 1. Intentar encontrar una de nuestras preferidas
+    for (const name of preferredVoices) {
+      selectedVoice = voices.find(v => v.name.includes(name) && v.lang.startsWith('es'))
+      if (selectedVoice) break
+    }
+
+    // 2. Fallback: cualquier voz en español (priorizando es-AR)
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang === 'es-AR') || voices.find(v => v.lang.startsWith('es'))
+    }
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice
+    }
+
+    utterance.lang = 'es-AR'
+    utterance.rate = 1.1
+    utterance.pitch = 1.0
+
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utterance)
   }
