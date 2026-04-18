@@ -51,7 +51,7 @@ export default function LandingPage() {
 
       {/* ── Hero ────────────────────────────────────────────────── */}
       <section className="flex flex-col items-center justify-center text-center px-6 py-16 gap-8 flex-1">
-        <Logo size={80} />
+        <Logo size={200} />
 
         <div className="space-y-4 max-w-lg">
           <h1 className="text-brand-yellow text-5xl font-black tracking-tight leading-tight">

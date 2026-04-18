@@ -6,7 +6,7 @@ interface LogoProps {
 export default function Logo({ size = 44, className = '' }: LogoProps) {
   return (
     <img
-      src="/Logo%20(2).svg"
+      src="/logo.svg"
       alt="Cómplice AI"
       width={size}
       height={size}
